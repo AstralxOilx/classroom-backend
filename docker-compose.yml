@@ -1,0 +1,28 @@
+services:
+  postgres:
+    image: postgres:latest
+    environment:
+      - TZ=Asia/Bangkok
+      - POSTGRES_USER=myuser
+      - POSTGRES_PASSWORD=mypassworld
+      - POSTGRES_DB=classroomDB
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data # แมปโวลุ่มเพื่อเก็บการตั้งค่า postgres
+      - /etc/localtime:/etc/localtime:ro # แมป localtime
+      - /etc/timezone:/etc/timezone:ro # แมป timezone
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: root
+    ports:
+      - '5050:80'
+    depends_on:
+      - postgres
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin # แมปโวลุ่มเพื่อเก็บการตั้งค่า pgAdmin
+volumes:
+  postgres-data: # สร้างโวลุ่มสำหรับ postgres
+  pgadmin-data: # สร้างโวลุ่มสำหรับ pgAdmin

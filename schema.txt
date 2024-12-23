@@ -1,0 +1,248 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Users {
+  id              String   @id @default(uuid()) //pk
+  identification  String   @db.VarChar(50) //รหัสประจำตัว ครู/นักเรียน
+  fname           String   @db.VarChar(50) //ชื่อ
+  lname           String   @db.VarChar(50) //นามสกุล
+  roleId          Int //บทบาท
+  profileImageUrl String? //รูปโปรไฟล์ผู้ใช้
+  email           String   @unique //เมลผู้ใช้
+  password        String //รหัสผู้ใช้
+  statusId        Int //สถานะการใช้งาน เช่น ใช้งาน/แบน
+  created_at      DateTime @default(now()) //วันที่สร้าง
+  updated_at      DateTime @default(now()) //อัปเดตล่าสุด
+  lastSignin      DateTime //Signin ล่าสุด
+
+  role   UserRole   @relation(fields: [roleId], references: [id])
+  status UserStatus @relation(fields: [statusId], references: [id])
+
+  classrooms ClassroomUser[]
+}
+
+model UserRole {
+  id         Int      @id @default(autoincrement())
+  name       String
+  created_at DateTime @default(now()) //วันที่สร้าง
+  updated_at DateTime @default(now()) //อัปเดตล่าสุด
+
+  users Users[]
+}
+
+model UserStatus {
+  id         Int      @id @default(autoincrement())
+  name       String
+  created_at DateTime @default(now()) //วันที่สร้าง
+  updated_at DateTime @default(now()) //อัปเดตล่าสุด
+
+  users Users[]
+}
+
+model Classroom {
+  id          String   @id @default(uuid())
+  subJectId   Int
+  colorId     Int
+  name        String   @db.VarChar(30)
+  description String   @db.VarChar(255)
+  scoreId     Int? // ทำให้ scoreId เป็น optional
+  maxScore    Float    @default(100)
+  created_at  DateTime @default(now()) //วันที่สร้าง
+  updated_at  DateTime @default(now()) //อัปเดตล่าสุด
+
+  score   Scores?  @relation(fields: [scoreId], references: [id])
+  subject SubJects @relation(fields: [subJectId], references: [id])
+  color   Colors   @relation(fields: [colorId], references: [id])
+
+  users      ClassroomUser[]
+  assignment Assignment[]
+  checkIn    CheckIn[]
+  folder     Folders[]
+}
+
+model Folders {
+  id          Int       @id @default(autoincrement())
+  classroomId String
+  parentId    Int?
+  name        String    @db.VarChar(50)
+  statusId    Int
+  publish     DateTime?
+  created_at  DateTime  @default(now()) //วันที่สร้าง
+  updated_at  DateTime  @default(now()) //อัปเดตล่าสุด
+
+  status    Status    @relation(fields: [statusId], references: [id])
+  classroom Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+
+  file File[]
+}
+
+model File {
+  id         Int       @id @default(autoincrement())
+  folderId   Int
+  statusId   Int
+  name       String
+  fileUrl    String
+  size       BigInt
+  type       String    @db.VarChar(20)
+  publish    DateTime?
+  upload_at  DateTime  @default(now()) //วันที่สร้าง
+  updated_at DateTime  @default(now()) //อัปเดตล่าสุด
+
+  status Status  @relation(fields: [statusId], references: [id])
+  folder Folders @relation(fields: [folderId], references: [id], onDelete: Cascade)
+}
+
+model CheckIn {
+  id               Int       @id @default(autoincrement())
+  classroomId      String
+  checkInStastusId Int
+  statusId         Int
+  description      String    @db.VarChar(255)
+  fileUrl          String?
+  dueDate          DateTime?
+  publish          DateTime?
+  created_at       DateTime  @default(now()) //วันที่สร้าง
+  updated_at       DateTime  @default(now()) //อัปเดตล่าสุด
+
+  status    Status    @relation(fields: [statusId], references: [id])
+  classroom Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+}
+
+model Colors {
+  id         Int      @id @default(autoincrement())
+  name       String
+  created_at DateTime @default(now()) //วันที่สร้าง
+  updated_at DateTime @default(now()) //อัปเดตล่าสุด
+
+  classroom Classroom[]
+}
+
+model SubJects {
+  id         Int      @id @default(autoincrement())
+  name       String
+  created_at DateTime @default(now()) //วันที่สร้าง
+  updated_at DateTime @default(now()) //อัปเดตล่าสุด
+
+  classroom Classroom[]
+}
+
+model Scores {
+  id         Int      @id @default(autoincrement())
+  name       String   @db.VarChar(30)
+  score      Float
+  created_at DateTime @default(now()) //วันที่สร้าง
+  updated_at DateTime @default(now()) //อัปเดตล่าสุด
+
+  classroom Classroom[]
+}
+
+model ClassroomUser {
+  userId       String
+  classroomId  String
+  permissionId Int
+  roleId       Int
+  joined_at    DateTime @default(now())
+
+  user      Users     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  classroom Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  prmission Prmission @relation(fields: [permissionId], references: [id])
+  classRole ClassRole @relation(fields: [roleId], references: [id])
+
+  @@id([userId, classroomId])
+}
+
+model Prmission {
+  id         Int      @id @default(autoincrement())
+  name       String
+  created_at DateTime @default(now()) //วันที่สร้าง
+  updated_at DateTime @default(now()) //อัปเดตล่าสุด
+
+  classroomUser ClassroomUser[]
+}
+
+model ClassRole {
+  id         Int      @id @default(autoincrement())
+  name       String
+  created_at DateTime @default(now()) //วันที่สร้าง
+  updated_at DateTime @default(now()) //อัปเดตล่าสุด
+
+  classroomUser ClassroomUser[]
+}
+
+model Assignment {
+  id          Int       @id @default(autoincrement())
+  classroomId String
+  title       String    @db.VarChar(50)
+  description String    @db.VarChar(255)
+  dueDate     DateTime?
+  maxScore    Float?
+  publish     DateTime?
+  statusId    Int
+  created_at  DateTime  @default(now()) //วันที่สร้าง
+  updated_at  DateTime  @default(now()) //อัปเดตล่าสุด
+
+  status    Status    @relation(fields: [statusId], references: [id])
+  classroom Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+
+  assignFile AssignFile[]
+  submission Submission[]
+}
+
+model AssignFile {
+  id           String   @id @default(uuid())
+  assignmentId Int
+  fileUrl      String
+  created_at   DateTime @default(now()) //วันที่สร้าง
+  updated_at   DateTime @default(now()) //อัปเดตล่าสุด
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+}
+
+model Status {
+  id         Int      @id @default(autoincrement())
+  name       String
+  created_at DateTime @default(now()) //วันที่สร้าง
+  updated_at DateTime @default(now()) //อัปเดตล่าสุด
+
+  assignment Assignment[] @relation()
+  checkIn    CheckIn[]    @relation()
+  folder     Folders[]    @relation()
+  file       File[]       @relation()
+}
+
+model Submission {
+  id               Int      @id @default(autoincrement())
+  assignmentId     Int
+  userId           String
+  score            Float?
+  feedback         String?
+  submissionFileId Int
+  submited_at      DateTime
+  updated_at       DateTime
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+
+  submissionFile SubmissionFile[]
+}
+
+model SubmissionFile {
+  id           String   @id @default(uuid())
+  submissionId Int
+  fileUrl      String
+  created_at   DateTime @default(now()) //วันที่สร้าง
+  updated_at   DateTime @default(now()) //อัปเดตล่าสุด
+
+  submission Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+}
